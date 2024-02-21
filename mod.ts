@@ -183,8 +183,8 @@ const sellLogic = () => {
     })
 }
 
-// Run a cron job at 11am monday through friday
-Deno.cron("Do Buy and Sell Actions","0 11 * * 1-5", () => {
+// Run a cron job at 11am utc monday through friday
+Deno.cron("Do Buy and Sell Actions","0 16 * * 1-5", () => {
     buyLogic()
     sellLogic()
 })
