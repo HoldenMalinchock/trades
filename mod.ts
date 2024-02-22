@@ -134,7 +134,11 @@ const buyLogic = () => {
             const closingPrice = stockHistoricalData.bars[stock.symbol][0].c
             
             // We need to avoid getting swept into penny stocks and small cap companies, for now we will look for stocks valued higher than $4 per share since historical data doesnt show market cap data
-            if(closingPrice < MA50 && closingPrice < MA200 && closingPrice >= 4) {
+            if(closingPrice < 4) {
+                console.log("Stock price is too low, penny stock territory", stock.symbol)
+                console.info("INVESTIGATE ", stock.symbol.toUpperCase())
+            }
+            else if(closingPrice < MA50 && closingPrice < MA200) {
                 // BUY
                 console.log("We should buy, price is below 50 and 200 MA", stock.symbol)
                 // We will buy 3% of our account balance rounded up if we don't have open positions in the stock
@@ -151,7 +155,7 @@ const buyLogic = () => {
                 }
             } else {
                 console.log("ignoring buy option, price is above averages", stock.symbol)
-            }
+                            }
         })
     })
 }
@@ -185,6 +189,6 @@ const sellLogic = () => {
 
 // Run a cron job at 11am utc monday through friday
 Deno.cron("Do Buy and Sell Actions","0 16 * * 1-5", () => {
-    buyLogic()
-    sellLogic()
+buyLogic()
+sellLogic()
 })
