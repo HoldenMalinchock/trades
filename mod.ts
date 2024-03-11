@@ -133,8 +133,8 @@ const buyLogic = () => {
             const [MA50, MA200] = get50And200DayMA(stockHistoricalData.bars[stock.symbol])
             const closingPrice = stockHistoricalData.bars[stock.symbol][0].c
             
-            // We need to avoid getting swept into penny stocks and small cap companies, for now we will look for stocks valued higher than $4 per share since historical data doesnt show market cap data
-            if(closingPrice < 4) {
+            // We need to avoid getting swept into penny stocks and small cap companies, for now we will look for stocks valued higher than $7 per share since historical data doesnt show market cap data
+            if(closingPrice < 7) {
                 console.log("Stock price is too low, penny stock territory", stock.symbol)
                 console.info("INVESTIGATE ", stock.symbol.toUpperCase())
             }
