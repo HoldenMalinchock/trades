@@ -1,5 +1,6 @@
 import { MostActiveStockResponse, HistoricalData, HistoricalDataObj } from "@/types/MarketTypes.ts"
 import { OpenPositions } from "@/types/TradeTypes.ts"
+import { getRecentOpenSeaTrades, getTradeDetailsOverPeriod } from "@/openInsider.ts"
 // We can use this to toggle which url to use for action later
 const ALPACA_BASE_URL_PAPER = "https://paper-api.alpaca.markets/v2"
 const ALPACA_BASE_URL_REAL = "https://api.alpaca.markets/v2"
@@ -116,6 +117,8 @@ const buyLogic = () => {
     // More complex logic could be being below the MA by a certain %, or being below the MA for a certain amount of time this might make more interesting information
     // Day 1 issues im seeing is that we are buying stocks that are dogshit, and are penny stocks that are in massive pump and dump states.
     // We need to have a market cap requirement or dollar amount requirement to prevent this
+    // Adding new logic for insider trading, if there is a recent insider trade we will buy the stock
+    // If we have insider information then we are going use this info to determine if we buy the stock, otherwise we will use the MA
     getMostActiveStocks().then(async (stocks) => {
         stocks.most_actives.forEach(async (stock) => {
             // Then we will get the historical data and preform buying logic for the stock
@@ -132,12 +135,31 @@ const buyLogic = () => {
             }
             const [MA50, MA200] = get50And200DayMA(stockHistoricalData.bars[stock.symbol])
             const closingPrice = stockHistoricalData.bars[stock.symbol][0].c
+            const insiderInfo = await getRecentOpenSeaTrades(stock.symbol)
+            const insiderTradeHistory = getTradeDetailsOverPeriod(insiderInfo, 6)
             
             // We need to avoid getting swept into penny stocks and small cap companies, for now we will look for stocks valued higher than $7 per share since historical data doesnt show market cap data
             if(closingPrice < 7) {
                 console.log("Stock price is too low, penny stock territory", stock.symbol)
                 console.info("INVESTIGATE ", stock.symbol.toUpperCase())
             }
+            else if(!isNaN(insiderTradeHistory.Purchase.priceAvg)) {
+                if(closingPrice < insiderTradeHistory.Purchase.priceAvg && insiderTradeHistory.Purchase.dataPoints >= 3 && insiderTradeHistory.Purchase.deltaAvg > 3 || insiderTradeHistory.Purchase.highDelta > 20) {
+                    console.log("We should buy, insiders are buying for better prices", stock.symbol)
+                    // We will buy 3% of our account balance rounded up if we don't have open positions in the stock
+                    // Will this be affected by open Orders? 
+                    const stockPosition = openPositions.find((position: any) => position.symbol === stock.symbol)
+                    if(stockPosition) {
+                        console.log("We already have a position, not buying", stock.symbol)
+                    } else {
+                        const buyAmount = Math.ceil(account.equity * 0.03 / closingPrice)
+                        console.log(`Buying ${buyAmount} of ${stock.symbol}`)
+                        buyStock(stock.symbol, buyAmount.toString()).then((res) => {
+                            console.log(res)
+                        })
+                    }
+                }
+           }
             else if(closingPrice < MA50 && closingPrice < MA200) {
                 // BUY
                 console.log("We should buy, price is below 50 and 200 MA", stock.symbol)
@@ -154,7 +176,7 @@ const buyLogic = () => {
                     })
                 }
             } else {
-                console.log("ignoring buy option, price is above averages", stock.symbol)
+                console.log("ignoring buy option, price is above averages and insider data is either not good or unavailable", stock.symbol)
                             }
         })
     })
@@ -172,7 +194,7 @@ const sellLogic = () => {
             const [MA50, MA200] = get50And200DayMA(stockHistoricalData.bars[position.symbol])
             // TODO we should check the type here once we know as this is a string
             const closingPrice = parseInt(position.current_price)
-            if(closingPrice > MA50 && closingPrice > MA200) {
+            if(closingPrice > (MA50 * 1.1) && closingPrice > (MA200 * 1.1)) {
                 // SELL
                 console.log("We should sell, price is above 50 and 200 MA", position.symbol)
                 // We will sell all of the stock

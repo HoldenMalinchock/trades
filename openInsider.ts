@@ -23,15 +23,14 @@ export const getRecentOpenSeaTrades = async (ticker: string) => {
   document?.querySelectorAll("tr").forEach((el) => {
     // We can parse what we need from this and be fine for now, we can make it more complex later if we find that there are issues
     const splitTableRowText = el.textContent.split(" ");
-    // console.log(splitTableRowText)
     // We need to say if it isnt a Date, or DDate or DMDate then return we can think of better ways to do this in the future
     if (
       splitTableRowText.length < 4 ||
       (!isDate(splitTableRowText[0], {}) &&
-        !isDate(splitTableRowText[0].slice(1), {}) &&
-        !isDate(splitTableRowText[0].slice(2), {}))
+      !isDate(splitTableRowText[0].slice(1), {}) &&
+      !isDate(splitTableRowText[0].slice(2), {}))
     ) return;
-
+    
     // Now we correctly have only objects which contain the the data we want
     const tradeDate = splitTableRowText[1].slice(-10);
     const _ = splitTableRowText.findIndex((el) => el === "-") + 1;
@@ -61,47 +60,57 @@ const average = (values: number[]) => {
 
 // Can we do something with delta's here to try to get a better understanding of what kind of volume we are working with
 // Small delta purchase and sales isnt exactly what I am looking for
-const getAverageTradeValues6Month = (trades: OpenSeaTrade[]) => {
+// We could make the length back to check a variable instead of a hard coded 6 months
+export const getTradeDetailsOverPeriod = (trades: OpenSeaTrade[], monthsPeriod: number) => {
   const sells: number[] = [];
   const buys: number[] = [];
-  const buyDeltas = [];
-  const sellDeltas = [];
+  const buyDeltas: number[] = [];
+  const sellDeltas: number[] = [];
+  const buyValues: number[] = [];
+  const sellValues: number[] = [];
   trades.forEach((trade) => {
     // Check if trade date of trade is within the last 6 months
     const tradeDate = new Date(trade.tradeDate);
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    if (tradeDate < sixMonthsAgo) return;
+    const xMonthsAgo = new Date();
+    xMonthsAgo.setMonth(xMonthsAgo.getMonth() - monthsPeriod);
+    if (tradeDate < xMonthsAgo) return;
 
     if (trade.tradeType === "Purchase") {
       buys.push(parseFloat(trade.stockPrice));
+      buyValues.push(parseFloat(trade.value.replaceAll(",", "")))
+      if(!isNaN(parseFloat(trade.delta))) buyDeltas.push(parseFloat(trade.delta.slice(0, -1)))
     } else if (trade.tradeType === "Sale") {
       sells.push(parseFloat(trade.stockPrice));
+      sellValues.push(parseFloat(trade.value.replaceAll(",", "")))
+      if(!isNaN(parseFloat(trade.delta))) sellDeltas.push(parseFloat(trade.delta.slice(0, -1)))
     }
   });
-
+  
   // We want to make this return object useful and give us lots of information about the sales and purchases, this will help us make more informed decisions on the backend
   return {
     Sale: {
       priceAvg: average(sells),
+      highPrice: Math.max(...sells),
       deltaAvg: average(sellDeltas),
       highDelta: Math.max(...sellDeltas),
-      valueAvg: average(sells),
-      highValue: Math.max(...sells),
+      valueAvg: average(sellValues),
+      highValue: Math.max(...sellValues),
+      dataPoints: sells.length
     },
     Purchase: {
       priceAvg: average(buys),
-      deltaAvg: average(sellDeltas),
-      highDelta: Math.max(...sellDeltas),
-      valueAvg: average(sells),
-      highValue: Math.max(...sells),
+      highPrice: Math.max(...buys),
+      deltaAvg: average(buyDeltas),
+      highDelta: Math.max(...buyDeltas),
+      valueAvg: average(buyValues),
+      highValue: Math.max(...buyValues),
+      dataPoints: buys.length
     },
   };
 };
 
-const t = await getRecentOpenSeaTrades("SNOW");
-// console.log(t)
-console.log(
-  "Average Sell / Buy Prices in last 6 months",
-  getAverageTradeValues6Month(t),
-);
+// const t = await getRecentOpenSeaTrades("RIVN");
+// console.log(
+//   "Average Sell / Buy Prices in last 6 months",
+//   getTradeDetailsOverPeriod(t, 6),
+// );
