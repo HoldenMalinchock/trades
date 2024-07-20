@@ -139,7 +139,7 @@ const buyLogic = () => {
             const insiderTradeHistory = getTradeDetailsOverPeriod(insiderInfo, 6)
             
             // We need to avoid getting swept into penny stocks and small cap companies, for now we will look for stocks valued higher than $7 per share since historical data doesnt show market cap data
-            if(closingPrice < 7) {
+            if(closingPrice < 10) {
                 console.log("Stock price is too low, penny stock territory", stock.symbol)
                 console.info("INVESTIGATE ", stock.symbol.toUpperCase())
             }
