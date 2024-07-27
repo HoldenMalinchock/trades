@@ -185,6 +185,10 @@ const buyLogic = () => {
 const sellLogic = () => {
     // Analyze the selling opportunities
     getOpenPositions().then((positions) => {
+        if(positions.length === 0) {
+            console.log("No open positions to sell")
+            return
+        }
         positions.forEach(async (position) => {
             const stockHistoricalData = await getHistoricalDataYear(position.symbol)
             if(!containsBarData(stockHistoricalData.bars)){
