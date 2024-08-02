@@ -59,7 +59,7 @@ const getAllOrders = async (status = "open") => {
     return await response.json()
 }
 
-const getMostActiveStocks = async (by = "volume", top=10): Promise<MostActiveStockResponse> => {
+const getMostActiveStocks = async (by = "volume", top=50): Promise<MostActiveStockResponse> => {
     // Sadly this endpoint is not upgraded
     const response = await sendAlpacaRequest(`https://data.alpaca.markets/v1beta1/screener/stocks/most-actives?by=${by}&top=${top}`, "GET", null)
     return await response.json()
