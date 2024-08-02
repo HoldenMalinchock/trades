@@ -59,7 +59,7 @@ const getAllOrders = async (status = "open") => {
     return await response.json()
 }
 
-const getMostActiveStocks = async (by = "volume", top=50): Promise<MostActiveStockResponse> => {
+const getMostActiveStocks = async (by = "volume", top=30): Promise<MostActiveStockResponse> => {
     // Sadly this endpoint is not upgraded
     const response = await sendAlpacaRequest(`https://data.alpaca.markets/v1beta1/screener/stocks/most-actives?by=${by}&top=${top}`, "GET", null)
     return await response.json()
@@ -214,7 +214,9 @@ const sellLogic = () => {
 }
 
 // Run a cron job at 11am utc monday through friday
-Deno.cron("Do Buy and Sell Actions","0 16 * * 1-5", () => {
+// Deno.cron("Do Buy and Sell Actions","0 16 * * 1-5", () => {
+// buyLogic()
+// sellLogic()
+// })
 buyLogic()
 sellLogic()
-})

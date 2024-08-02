@@ -30,25 +30,30 @@ export const getRecentOpenSeaTrades = async (ticker: string) => {
       !isDate(splitTableRowText[0].slice(1), {}) &&
       !isDate(splitTableRowText[0].slice(2), {}))
     ) return;
-    
+    // console.log(splitTableRowText)
     // Now we correctly have only objects which contain the the data we want
     const tradeDate = splitTableRowText[1].slice(-10);
-    const _ = splitTableRowText.findIndex((el) => el === "-") + 1;
+    try {
 
-    const tradeType = splitTableRowText[_].split("$")[0].split("+")[0];
-    const stockPrice = splitTableRowText[_].split("$")[1].split(/[+-]/)[0];
-    // When looking at delta it can be either be positive negative or 0, positive is on purchase negative on sell and 0 for either
-    const delta = splitTableRowText[_].split("$")[1].split(/[+-]/)[2];
-    const value = splitTableRowText[_].split("$")[2];
+      const _ = splitTableRowText.lastIndexOf("-") + 1;
+  
+      const tradeType = splitTableRowText[_].split("$")[0].split("+")[0];
+      const stockPrice = splitTableRowText[_].split("$")[1].split(/[+-]/)[0];
+      // When looking at delta it can be either be positive negative or 0, positive is on purchase negative on sell and 0 for either
+      const delta = splitTableRowText[_].split("$")[1].split(/[+-]/)[2];
+      const value = splitTableRowText[_].split("$")[2];
+      // What we are intereseted in is trying to return some generic data about a stock so we can parse and use it with our trading information
+      trades.push({
+        tradeDate: tradeDate,
+        tradeType: tradeType,
+        stockPrice: stockPrice,
+        delta: delta,
+        value: value,
+      });
+    } catch(e) {
+      console.log("Failed parsing openinsider trade data: ", e)
+    }
 
-    // What we are intereseted in is trying to return some generic data about a stock so we can parse and use it with our trading information
-    trades.push({
-      tradeDate: tradeDate,
-      tradeType: tradeType,
-      stockPrice: stockPrice,
-      delta: delta,
-      value: value,
-    });
   });
   return trades;
 };
