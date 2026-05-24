@@ -27,28 +27,31 @@ export const getRecentOpenSeaTrades = async (ticker: string) => {
     if (
       splitTableRowText.length < 4 ||
       (!isDate(splitTableRowText[0], {}) &&
-      !isDate(splitTableRowText[0].slice(1), {}) &&
-      !isDate(splitTableRowText[0].slice(2), {}))
+        !isDate(splitTableRowText[0].slice(1), {}) &&
+        !isDate(splitTableRowText[0].slice(2), {}))
     ) return;
-    
+    // console.log(splitTableRowText)
     // Now we correctly have only objects which contain the the data we want
     const tradeDate = splitTableRowText[1].slice(-10);
-    const _ = splitTableRowText.findIndex((el) => el === "-") + 1;
+    try {
+      const _ = splitTableRowText.lastIndexOf("-") + 1;
 
-    const tradeType = splitTableRowText[_].split("$")[0].split("+")[0];
-    const stockPrice = splitTableRowText[_].split("$")[1].split(/[+-]/)[0];
-    // When looking at delta it can be either be positive negative or 0, positive is on purchase negative on sell and 0 for either
-    const delta = splitTableRowText[_].split("$")[1].split(/[+-]/)[2];
-    const value = splitTableRowText[_].split("$")[2];
-
-    // What we are intereseted in is trying to return some generic data about a stock so we can parse and use it with our trading information
-    trades.push({
-      tradeDate: tradeDate,
-      tradeType: tradeType,
-      stockPrice: stockPrice,
-      delta: delta,
-      value: value,
-    });
+      const tradeType = splitTableRowText[_].split("$")[0].split("+")[0];
+      const stockPrice = splitTableRowText[_].split("$")[1].split(/[+-]/)[0];
+      // When looking at delta it can be either be positive negative or 0, positive is on purchase negative on sell and 0 for either
+      const delta = splitTableRowText[_].split("$")[1].split(/[+-]/)[2];
+      const value = splitTableRowText[_].split("$")[2];
+      // What we are intereseted in is trying to return some generic data about a stock so we can parse and use it with our trading information
+      trades.push({
+        tradeDate: tradeDate,
+        tradeType: tradeType,
+        stockPrice: stockPrice,
+        delta: delta,
+        value: value,
+      });
+    } catch (e) {
+      console.log("Failed parsing openinsider trade data: ", e);
+    }
   });
   return trades;
 };
@@ -61,7 +64,10 @@ const average = (values: number[]) => {
 // Can we do something with delta's here to try to get a better understanding of what kind of volume we are working with
 // Small delta purchase and sales isnt exactly what I am looking for
 // We could make the length back to check a variable instead of a hard coded 6 months
-export const getTradeDetailsOverPeriod = (trades: OpenSeaTrade[], monthsPeriod: number) => {
+export const getTradeDetailsOverPeriod = (
+  trades: OpenSeaTrade[],
+  monthsPeriod: number,
+) => {
   const sells: number[] = [];
   const buys: number[] = [];
   const buyDeltas: number[] = [];
@@ -77,15 +83,19 @@ export const getTradeDetailsOverPeriod = (trades: OpenSeaTrade[], monthsPeriod: 
 
     if (trade.tradeType === "Purchase") {
       buys.push(parseFloat(trade.stockPrice));
-      buyValues.push(parseFloat(trade.value.replaceAll(",", "")))
-      if(!isNaN(parseFloat(trade.delta))) buyDeltas.push(parseFloat(trade.delta.slice(0, -1)))
+      buyValues.push(parseFloat(trade.value.replaceAll(",", "")));
+      if (!isNaN(parseFloat(trade.delta))) {
+        buyDeltas.push(parseFloat(trade.delta.slice(0, -1)));
+      }
     } else if (trade.tradeType === "Sale") {
       sells.push(parseFloat(trade.stockPrice));
-      sellValues.push(parseFloat(trade.value.replaceAll(",", "")))
-      if(!isNaN(parseFloat(trade.delta))) sellDeltas.push(parseFloat(trade.delta.slice(0, -1)))
+      sellValues.push(parseFloat(trade.value.replaceAll(",", "")));
+      if (!isNaN(parseFloat(trade.delta))) {
+        sellDeltas.push(parseFloat(trade.delta.slice(0, -1)));
+      }
     }
   });
-  
+
   // We want to make this return object useful and give us lots of information about the sales and purchases, this will help us make more informed decisions on the backend
   return {
     Sale: {
@@ -95,7 +105,7 @@ export const getTradeDetailsOverPeriod = (trades: OpenSeaTrade[], monthsPeriod: 
       highDelta: Math.max(...sellDeltas),
       valueAvg: average(sellValues),
       highValue: Math.max(...sellValues),
-      dataPoints: sells.length
+      dataPoints: sells.length,
     },
     Purchase: {
       priceAvg: average(buys),
@@ -104,7 +114,7 @@ export const getTradeDetailsOverPeriod = (trades: OpenSeaTrade[], monthsPeriod: 
       highDelta: Math.max(...buyDeltas),
       valueAvg: average(buyValues),
       highValue: Math.max(...buyValues),
-      dataPoints: buys.length
+      dataPoints: buys.length,
     },
   };
 };
