@@ -159,12 +159,12 @@ const containsBarData = (bars: Object) => {
   return true;
 };
 
-// Creating the stucture for the process to run
-// First we get our account data and our open positions
-const account = await getAccount();
-const openPositions = await getOpenPositions();
-
-const buyLogic = () => {
+// account + openPositions are fetched fresh inside the cron handler below
+// rather than at module load. Top-level awaits run during DD2's entrypoint
+// evaluation (before any cron/serve handler is registered), so doing the
+// Alpaca calls up here would either hammer the API on every cold start or
+// fail the deploy if env vars aren't set yet.
+const buyLogic = (account: any, openPositions: OpenPositions[]) => {
   // Analyze the buying opportunities
   // Logic is currently checking top 10 volume stocks for the day and buying 3% of our account value if the stock is below the 50 and 200 day moving averages
   // More complex logic could be being below the MA by a certain %, or being below the MA for a certain amount of time this might make more interesting information
@@ -389,8 +389,16 @@ const sellLogic = () => {
   });
 };
 
-// Run a cron job at 11am utc monday through friday
-Deno.cron("Do Buy and Sell Actions", "0 16 * * 1-5", () => {
-  buyLogic();
+// Run a cron job at 11am utc monday through friday.
+// Registering Deno.cron here (and not doing any top-level awaits) is what
+// makes this file a valid DD2 entrypoint — DD2 evaluates the module to
+// discover cron registrations and considers the deploy failed if nothing
+// is registered.
+Deno.cron("Do Buy and Sell Actions", "0 16 * * 1-5", async () => {
+  // Refetch state every run so we're acting on current equity/positions
+  // rather than a snapshot taken at module load.
+  const account = await getAccount();
+  const openPositions = await getOpenPositions();
+  buyLogic(account, openPositions);
   sellLogic();
 });
