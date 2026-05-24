@@ -1,0 +1,23 @@
+name: Test
+
+on:
+  pull_request:
+    branches: [main]
+  # Allow manual runs from the Actions tab — useful when openinsider has a
+  # transient outage and you want to retry without pushing a new commit.
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # --allow-net is required: the tests fetch openinsider.com to verify
+      # the live HTML still parses into the shape we expect.
+      - name: Run tests
+        run: deno test --allow-net

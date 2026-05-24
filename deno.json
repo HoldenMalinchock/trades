@@ -1,8 +1,10 @@
 {
   "tasks": {
-    "start": "deno run --allow-net --allow-env --unstable-cron main.ts"
+    "start": "deno run --allow-net --allow-env --unstable-cron main.ts",
+    "test": "deno test --allow-net"
   },
   "imports": {
-    "@/": "./"
+    "@/": "./",
+    "deno-dom": "jsr:@b-fuze/deno-dom@^0.1.56"
   }
 }

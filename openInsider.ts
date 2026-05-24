@@ -1,5 +1,12 @@
-import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
-import { isDate } from "https://deno.land/x/deno_validator@v0.0.5/mod.ts";
+import { DOMParser } from "deno-dom";
+
+const isDate = (value: string): boolean => {
+  if (typeof value !== "string") return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return false;
+  return parsed.toISOString().slice(0, 10) === value;
+};
 
 interface OpenSeaTrade {
   tradeDate: string;
@@ -10,8 +17,7 @@ interface OpenSeaTrade {
 }
 
 export const getRecentOpenSeaTrades = async (ticker: string) => {
-  const url =
-    `http://openinsider.com/screener?s=${ticker}&isofficer=1&iscob=1&isceo=1&ispres=1&iscoo=1&iscfo=1&isgc=1&isvp=1&isdirector=1&cnt=35&page=1`;
+  const url = `http://openinsider.com/screener?s=${ticker}&isofficer=1&iscob=1&isceo=1&ispres=1&iscoo=1&iscfo=1&isgc=1&isvp=1&isdirector=1&cnt=35&page=1`;
 
   const response = await fetch(url);
   const html = await response.text();
@@ -26,10 +32,11 @@ export const getRecentOpenSeaTrades = async (ticker: string) => {
     // We need to say if it isnt a Date, or DDate or DMDate then return we can think of better ways to do this in the future
     if (
       splitTableRowText.length < 4 ||
-      (!isDate(splitTableRowText[0], {}) &&
-        !isDate(splitTableRowText[0].slice(1), {}) &&
-        !isDate(splitTableRowText[0].slice(2), {}))
-    ) return;
+      (!isDate(splitTableRowText[0]) &&
+        !isDate(splitTableRowText[0].slice(1)) &&
+        !isDate(splitTableRowText[0].slice(2)))
+    )
+      return;
     // console.log(splitTableRowText)
     // Now we correctly have only objects which contain the the data we want
     const tradeDate = splitTableRowText[1].slice(-10);
@@ -57,8 +64,9 @@ export const getRecentOpenSeaTrades = async (ticker: string) => {
 };
 
 const average = (values: number[]) => {
-  return Math.round(values.reduce((a, b) => a + b, 0) / values.length * 100) /
-    100;
+  return (
+    Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100
+  );
 };
 
 // Can we do something with delta's here to try to get a better understanding of what kind of volume we are working with
@@ -118,9 +126,3 @@ export const getTradeDetailsOverPeriod = (
     },
   };
 };
-
-// const t = await getRecentOpenSeaTrades("RIVN");
-// console.log(
-//   "Average Sell / Buy Prices in last 6 months",
-//   getTradeDetailsOverPeriod(t, 6),
-// );
