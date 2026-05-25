@@ -288,7 +288,8 @@ const sellLogic = () => {
       // insider sales as a smart-money distribution signal.
       const insiderInfo = await getRecentOpenSeaTrades(position.symbol);
       const insiderTradeHistory = getTradeDetailsOverPeriod(insiderInfo, 6);
-      const insiderDistribution = !isNaN(insiderTradeHistory.Sale.priceAvg) &&
+      const insiderDistribution =
+        !isNaN(insiderTradeHistory.Sale.priceAvg) &&
         insiderTradeHistory.Sale.dataPoints >= 3 &&
         insiderTradeHistory.Sale.deltaAvg > 5;
 
@@ -299,14 +300,12 @@ const sellLogic = () => {
       // 1. Hard stop loss. Without this a thesis-break trade can ride to -50%.
       if (unrealizedPct <= STOP_LOSS_PCT) {
         console.log(
-          `SELL ${position.symbol}: stop loss (${
-            (unrealizedPct * 100).toFixed(
-              2,
-            )
-          }%)`,
+          `SELL ${position.symbol}: stop loss (${(unrealizedPct * 100).toFixed(
+            2,
+          )}%)`,
         );
         sellStock(position.symbol, position.qty).then((res) =>
-          console.log(res)
+          console.log(res),
         );
         return;
       }
@@ -315,14 +314,12 @@ const sellLogic = () => {
       //    if it keeps running we can re-enter on the next dip.
       if (unrealizedPct >= TAKE_PROFIT_PCT) {
         console.log(
-          `SELL ${position.symbol}: take profit (${
-            (
-              unrealizedPct * 100
-            ).toFixed(2)
-          }%)`,
+          `SELL ${position.symbol}: take profit (${(
+            unrealizedPct * 100
+          ).toFixed(2)}%)`,
         );
         sellStock(position.symbol, position.qty).then((res) =>
-          console.log(res)
+          console.log(res),
         );
         return;
       }
@@ -337,7 +334,7 @@ const sellLogic = () => {
           `SELL ${position.symbol}: lost MA200, mean-reversion thesis broken`,
         );
         sellStock(position.symbol, position.qty).then((res) =>
-          console.log(res)
+          console.log(res),
         );
         return;
       }
@@ -353,7 +350,7 @@ const sellLogic = () => {
             `avg delta ${insiderTradeHistory.Sale.deltaAvg}%)`,
         );
         sellStock(position.symbol, position.qty).then((res) =>
-          console.log(res)
+          console.log(res),
         );
         return;
       }
@@ -366,24 +363,20 @@ const sellLogic = () => {
       ) {
         console.log(
           `SELL ${position.symbol}: stretched above both MAs ` +
-            `(price ${currentPrice}, MA50 ${MA50.toFixed(2)}, MA200 ${
-              MA200.toFixed(
-                2,
-              )
-            })`,
+            `(price ${currentPrice}, MA50 ${MA50.toFixed(2)}, MA200 ${MA200.toFixed(
+              2,
+            )})`,
         );
         sellStock(position.symbol, position.qty).then((res) =>
-          console.log(res)
+          console.log(res),
         );
         return;
       }
 
       console.log(
-        `HOLD ${position.symbol}: P/L ${
-          (unrealizedPct * 100).toFixed(
-            2,
-          )
-        }%, no exit signal`,
+        `HOLD ${position.symbol}: P/L ${(unrealizedPct * 100).toFixed(
+          2,
+        )}%, no exit signal`,
       );
     });
   });
@@ -402,3 +395,5 @@ Deno.cron("Do Buy and Sell Actions", "0 16 * * 1-5", async () => {
   buyLogic(account, openPositions);
   sellLogic();
 });
+
+Deno.serve((_req) => new Response("Doing some analysis..."));
